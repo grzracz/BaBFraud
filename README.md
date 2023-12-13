@@ -1,5 +1,5 @@
-# Orange App
+# BaB fraud
 
-An orange Orange App for mining Orange (ORA)
+Fraud calculation for Build a Bull voting
 
-So orange wow
+All calculation done by `main.py` script then hosted on AWS S3
