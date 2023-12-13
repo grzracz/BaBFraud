@@ -27,6 +27,7 @@ const legendNames: Record<string, string> = {
     f1: 'One fraud condition votes',
     f2: 'Two fraud conditions votes',
     f3: 'Three fraud conditions votes',
+    e: 'Votes used to disqualify cheaters',
 };
 
 function App() {
@@ -47,39 +48,46 @@ function App() {
 
     const [data, funderData, topFunders] = useMemo(() => {
         const votes: Record<keyof VotingData['votes'], number[]> = {
-            total: [0, 0, 0, 0],
-            TameQuest: [0, 0, 0, 0],
-            Janus: [0, 0, 0, 0],
-            DAOWakanda: [0, 0, 0, 0],
-            Aurally: [0, 0, 0, 0],
-            CompX: [0, 0, 0, 0],
+            total: [0, 0, 0, 0, 0],
+            TameQuest: [0, 0, 0, 0, 0],
+            Janus: [0, 0, 0, 0, 0],
+            DAOWakanda: [0, 0, 0, 0, 0],
+            Aurally: [0, 0, 0, 0, 0],
+            CompX: [0, 0, 0, 0, 0],
         };
-        const funderAccounts: Record<string, number> = {};
+        const funderAccounts: Record<string, number[]> = {};
         if (votingData) {
             Object.keys(votingData.accounts).forEach((voterAddress) => {
                 const funder = votingData.accounts[voterAddress].first_transaction_from;
                 if (!funderAccounts[funder]) {
-                    funderAccounts[funder] = 1;
+                    funderAccounts[funder] = [1, 0, 0, 0, 0, 0];
                 } else {
-                    funderAccounts[funder] += 1;
+                    funderAccounts[funder][0] += 1;
                 }
             });
             const minTimestamp = 1702422000 - (minActiveDays - 1) * 24 * 60 * 60;
-            console.log(fundedByLimit, minTimestamp, minTransactions);
-            Object.keys(votes).forEach((project) => {
+            Object.keys(votes).forEach((project, i) => {
                 const voters = votingData.votes[project as keyof VotingData['votes']];
+
                 voters.forEach((address) => {
                     let fraudLevel = 0;
                     const account = votingData.accounts[address];
-                    if (funderAccounts[account.first_transaction_from] - 1 > fundedByLimit) fraudLevel += 1;
-                    if (account.created_at_timestamp > minTimestamp) fraudLevel += 1;
-                    if (account.received_transactions_before_vote < minTransactions) fraudLevel += 1;
-                    votes[project as keyof VotingData['votes']][fraudLevel] += 1;
+                    if (
+                        account.first_transaction_from === 'FRAUDD77SWCXYGJZS7G5GTNISGWQMM3JEIJIUNGOT64CTG25DJNA45EB7Y'
+                    ) {
+                        votes[project as keyof VotingData['votes']][4] += 1;
+                    } else {
+                        if (i > 0) funderAccounts[account.first_transaction_from][i] += 1;
+                        if (funderAccounts[account.first_transaction_from][0] - 1 > fundedByLimit) fraudLevel += 1;
+                        if (account.created_at_timestamp > minTimestamp) fraudLevel += 1;
+                        if (account.received_transactions_before_vote < minTransactions) fraudLevel += 1;
+                        votes[project as keyof VotingData['votes']][fraudLevel] += 1;
+                    }
                 });
             });
         }
         const funders = Object.keys(funderAccounts);
-        funders.sort((a, b) => funderAccounts[b] - funderAccounts[a]);
+        funders.sort((a, b) => funderAccounts[b][0] - funderAccounts[a][0]);
         return [
             Object.keys(votes).map((project) => ({
                 name: project,
@@ -87,6 +95,7 @@ function App() {
                 f1: votes[project as keyof VotingData['votes']][1],
                 f2: votes[project as keyof VotingData['votes']][2],
                 f3: votes[project as keyof VotingData['votes']][3],
+                e: votes[project as keyof VotingData['votes']][4],
             })),
             funderAccounts,
             funders.slice(0, 15),
@@ -157,20 +166,54 @@ function App() {
                         <Bar dataKey="f1" stackId="a" fill="#feb9b9" />
                         <Bar dataKey="f2" stackId="a" fill="#ff5757" />
                         <Bar dataKey="f3" stackId="a" fill="#f40000" />
+                        <Bar dataKey="e" stackId="a" fill="#dcdcdc" />
                     </BarChart>
                 </ResponsiveContainer>
             </div>
             <div className="pb-32 px-4">
                 <h1 className="font-bold text-center heading text-2xl pt-8">Top fraud accounts:</h1>
-                <div className="grid grid-cols-2">
-                    <div className="font-bold">Funder address</div>
-                    <div className="font-bold text-center">Created voting accounts</div>
-                    {topFunders.map((f) => (
-                        <>
-                            <div className="text-ellipsis max-w-full overflow-hidden">{f}</div>
-                            <div className="text-center">{funderData[f]}</div>
-                        </>
-                    ))}
+                <div className="grid grid-cols-12 border">
+                    <div className="font-bold col-span-5">Funder address</div>
+                    <div className="font-bold col-span-2 text-center">Created voting accounts</div>
+                    <div className="col-span-5">
+                        <div>Votes for</div>
+                        <div className="font-bold grid grid-cols-5">
+                            <div>TameQuest</div>
+                            <div>Janus</div>
+                            <div>DAOWakanda</div>
+                            <div>Aurally</div>
+                            <div>CompX</div>
+                        </div>
+                    </div>
+                    {topFunders.map((f) =>
+                        f === 'FRAUDD77SWCXYGJZS7G5GTNISGWQMM3JEIJIUNGOT64CTG25DJNA45EB7Y' ? (
+                            <>
+                                <div className="border bg-gray-100 text-ellipsis col-span-5 text-gray-800 max-w-full overflow-hidden font-bold pb-2">
+                                    {f}
+                                    <div>
+                                        This address was used to equalize the votes for non-cheating projects and
+                                        disqualify the cheaters
+                                    </div>
+                                </div>
+                                <div className="border bg-gray-100 col-span-2 text-center">{funderData[f][0]}</div>
+                                <div className="border bg-gray-100 text-center">1795</div>
+                                <div className="border bg-gray-100 text-center">1795</div>
+                                <div className="border bg-gray-100 text-center">{funderData[f][3] || ''}</div>
+                                <div className="border bg-gray-100 text-center">{funderData[f][4] || ''}</div>
+                                <div className="border bg-gray-100 text-center">1795</div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="border text-ellipsis col-span-5 max-w-full overflow-hidden">{f}</div>
+                                <div className="border col-span-2 text-center">{funderData[f][0]}</div>
+                                <div className="border text-center">{funderData[f][1] || ''}</div>
+                                <div className="border text-center">{funderData[f][2] || ''}</div>
+                                <div className="border text-center">{funderData[f][3] || ''}</div>
+                                <div className="border text-center">{funderData[f][4] || ''}</div>
+                                <div className="border text-center">{funderData[f][5] || ''}</div>
+                            </>
+                        ),
+                    )}
                 </div>
             </div>
         </div>

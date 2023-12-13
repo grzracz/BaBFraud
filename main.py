@@ -8,6 +8,7 @@ app_id = 1272433669
 names = ["CompX", "TameQuest", "Janus", "Aurally", "DAOWakanda"]
 
 
+
 def get(url):
     response = requests.get(url)
     return json.loads(response.content)
@@ -27,7 +28,7 @@ def get_transactions_before_vote(address, vote_block):
     return len(transactions), transactions[0]["sender"]
 
 def get_bab_transactions(votes, ages, next = None):
-    url = f"https://mainnet-idx.algonode.cloud/v2/transactions?application-id={app_id}&tx-type=appl&limit=200"
+    url = f"https://mainnet-idx.algonode.cloud/v2/transactions?application-id={app_id}&tx-type=appl&limit=1000"
     if next:
         url += f"&next={next}"
     data = get(url)

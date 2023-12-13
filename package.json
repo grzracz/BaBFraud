@@ -12,8 +12,10 @@
         "deploy": "gh-pages -d dist --cname oranges.meme"
     },
     "dependencies": {
+        "algosdk": "^2.7.0",
         "axios": "^1.6.2",
         "dayjs": "^1.11.10",
+        "dotenv": "^16.3.1",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-hot-toast": "^2.4.1",
@@ -21,6 +23,7 @@
         "recharts": "^2.10.3"
     },
     "devDependencies": {
+        "@types/node": "^20.10.4",
         "@types/react": "^18.2.37",
         "@types/react-dom": "^18.2.15",
         "@typescript-eslint/eslint-plugin": "^6.10.0",
